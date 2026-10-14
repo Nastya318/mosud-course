@@ -1,0 +1,77 @@
+         отношение                  предикат                               проекция
+вар.6	order_reviews	review_score ≤ 2 и comment_message IS NOT NULL	order_id, score, comment_message
+
+
+1. Исходное отношение и атрибуты
+Отношение: olist.order_reviews
+Атрибуты: review_id, order_id, review_score, review_comment_title, review_comment_message, review_creation_date, review_answer_timestamp
+
+2. Выражение реляционной алгебры с σ, π и при необходимости ρ.
+π_{order_id, review_score, review_comment_message}(
+     σ_{review_score ≤ 2 ∧ review_comment_message IS NOT NULL}(
+         order_reviews
+     )
+ )
+3. Реализовать выражение в SQL.
+SELECT 
+    order_id, 
+    review_score, 
+    review_comment_message
+FROM olist.order_reviews
+WHERE review_score <= 2 
+  AND review_comment_message IS NOT NULL; 
+
+4. Разбить сложный предикат на две последовательные выборки и показать эквивалентность результата.
+
+WITH step1 AS (
+    SELECT *
+    FROM olist.order_reviews
+    WHERE review_score <= 2
+),
+step2 AS (
+    SELECT *
+    FROM step1
+    WHERE review_comment_message IS NOT NULL
+)
+select count(*) as total
+FROM step2;
+
+13429 строк также получились.
+
+5. Создать второй SQL-вариант, в котором ненужные столбцы исключаются раньше.
+WITH projected AS (
+    --сначала проекция — оставляем только нужные атрибуты
+    SELECT 
+        order_id, 
+        review_score, 
+        review_comment_message
+    FROM olist.order_reviews
+)
+SELECT count(*)
+FROM projected
+WHERE review_score <= 2 
+  AND review_comment_message IS NOT NULL;
+
+6. Проверить, могут ли в проекции возникнуть дубликаты. При необходимости сравнить SELECT и SELECT DISTINCT.
+SELECT 
+    'SELECT' AS вариант, count(*) AS строк
+FROM (
+    SELECT order_id, review_score, review_comment_message
+    FROM olist.order_reviews
+    WHERE review_score <= 2 AND review_comment_message IS NOT NULL
+) t
+
+UNION ALL
+
+SELECT 
+    'SELECT DISTINCT', count(*)
+FROM (
+    SELECT DISTINCT order_id, review_score, review_comment_message
+    FROM olist.order_reviews
+    WHERE review_score <= 2 AND review_comment_message IS NOT NULL
+) t;
+
+select distinct - 13423
+select - 13429
+
+Было обнаружено 6 дубликатов.
